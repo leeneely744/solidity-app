@@ -1,7 +1,13 @@
 pragma solidity ^0.8.0;
 
 contract HelloWorld {
-    function hello() public pure returns (string memory) {
-        return "Hello World!";
+    string public name = "World";
+
+    constructor(string memory _name) {
+        name = _name;
+    }
+
+    function hello() public view returns (string memory) {
+        return string(abi.encodePacked("Hello ", name));
     }
 }
