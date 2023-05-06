@@ -1,1 +1,2 @@
-./build/contracts/
+build/
+client/src/contracts/
