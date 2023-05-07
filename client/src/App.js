@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import Web3 from 'web3';
-import CandidateContract from './contracts/Candidate.json';
+import CandidateContract from './contracts/Voting.json';
 
 const App = () => {
   const [web3, setWeb3] = useState(null);
   const [candidates, setCandidates] = useState([]);
+  const [contract, setContract] = useState(null);
 
   useEffect(() => {
     async function loadCandidates() {
@@ -20,33 +21,36 @@ const App = () => {
         CandidateContract.abi,
         deployedNetwork && deployedNetwork.address,
       );
+      setContract(contract);
 
-      // get candidates
-      // call() でメソッドを呼び出すと、ガス代を消費しない
-      const candidatesCount = await contract.methods.count().call();
-      const fetchedCandidates = [];
-      for (let i = 0; i < candidatesCount; i++) {
-        const candidate = await contract.methods.candidates(i).call();
-        fetchedCandidates.push(candidate);
-      }
-
-      const shuffledCandidates = fetchedCandidates.sort(() => Math.random() - 0.5);
+      // get all candidates
+      const fetchedCandidates = await contract.methods.getAllCandidates().call();
+      const copiedArr = fetchedCandidates.slice();
+      const shuffledCandidates = copiedArr.sort(() => Math.random() - 0.5);
       setCandidates(shuffledCandidates);
     };
 
     loadCandidates();
   }, []);
 
-  // ここにアプリのロジックやUIを追加する
+  async function voteForCandidate(candidateId) {
+    // 接続されているEthereumノードのアカウントを取得
+    // 開発時ならGanacheで、本番環境ではMetaMaskだったりする。
+    const accounts = await web3.eth.getAccounts();
+
+    await contract.methods.vote(candidateId).send({ from: accounts[0] });
+    window.location.reload();
+  }
 
   return (
     <div className='App'>
-      <h1>Hello, World!</h1>
-      <ul>
-        {candidates.map((candidate, index) => (
-          <li key={index}>{candidate}</li>
-        ))}
-      </ul>
+      <h1>Vote Game!</h1>
+      {candidates.map((candidate, index) => (
+        <div key={index}>
+          <p>{`${candidate.name}: ${candidate.voteCount} votes`}</p>
+          <button onClick={() => voteForCandidate(candidate.id)}>Vote</button>
+        </div>
+      ))}
     </div>
   );
 };
